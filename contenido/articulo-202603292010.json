@@ -1,5 +1,4 @@
 {
-  "titulo": "Stryker: hacktivos iraníes atribuyen ataque de lavado de datos",
   "subtitulo": "Una acción que, según dicen, podría ser un intento de sabotaje contra la empresa.",
   "cuerpo": [
     {
@@ -23,5 +22,6 @@
   "seccion": "ciberseguridad",
   "url_fuente": "https://krebsonsecurity.com/2026/03/iran-backed-hackers-claim-wiper-attack-on-medtech-firm-stryker/",
   "fecha_generacion": "2026-03-29T20:10:19.976946",
-  "slug": "articulo-202603292010"
+  "slug": "articulo-202603292010",
+  "titular": "Stryker: hacktivos iraníes atribuyen ataque de lavado de datos"
 }
