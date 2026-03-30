@@ -60,7 +60,7 @@ export default function Articulo({ params }) {
         <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-4">{art.titular}</h1>
         <p className="text-xl text-gray-500 mb-8 border-l-4 border-blue-200 pl-4">{art.subtitulo}</p>
         <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: art.cuerpo }} />
+          dangerouslySetInnerHTML={{ __html: art.cuerpo || "" }} />
         {art.tags?.length > 0 && (
           <div className="mt-10 pt-6 border-t border-gray-100 flex flex-wrap gap-2">
             {art.tags.map((tag) => (
