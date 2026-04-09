@@ -2,13 +2,13 @@
 import { useState, useEffect, useRef } from 'react'
 
 const LIGAS = [
-  { id: 'premier',      nombre: 'Premier',      flag: '🏴' },
-  { id: 'laliga',       nombre: 'La Liga',       flag: '🇪🇸' },
-  { id: 'seriea',       nombre: 'Serie A',       flag: '🇮🇹' },
-  { id: 'bundesliga',   nombre: 'Bundesliga',    flag: '🇩🇪' },
-  { id: 'champions',    nombre: 'Champions',     flag: '🏆' },
-  { id: 'libertadores', nombre: 'Libertadores',  flag: '🌎' },
-  { id: 'liga1',        nombre: 'Liga 1 Perú',   flag: '🇵🇪' },
+  { id: 'premier',      nombre: 'Premier',      flag: '🏴', thesportsdb: '4328' },
+  { id: 'laliga',       nombre: 'La Liga',       flag: '🇪🇸', thesportsdb: '4335' },
+  { id: 'seriea',       nombre: 'Serie A',       flag: '🇮🇹', thesportsdb: '4332' },
+  { id: 'bundesliga',   nombre: 'Bundesliga',    flag: '🇩🇪', thesportsdb: '4331' },
+  { id: 'champions',    nombre: 'Champions',     flag: '🏆', thesportsdb: '4480' },
+  { id: 'libertadores', nombre: 'Libertadores',  flag: '🌎', thesportsdb: '4424' },
+  { id: 'liga1',        nombre: 'Liga 1 Perú',   flag: '🇵🇪', thesportsdb: '4461' },
 ]
 
 function initials(name) {
@@ -70,22 +70,32 @@ export default function DeportesWidget() {
       return
     }
     setCargando(true)
-    fetch(`/api/deportes?liga=${liga.id}`)
+
+    // Llamar directo a TheSportsDB — últimos partidos de la liga
+    fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${liga.thesportsdb}`)
       .then(r => r.json())
       .then(data => {
-        const ev = (data.matches || data.events || []).filter(e => e.strHomeTeam && e.strAwayTeam).slice(0, 15)
+        const ev = (data.events || [])
+          .filter(e => e.strHomeTeam && e.strAwayTeam)
+          .slice(-15)
+          .reverse()
         setCache(p => ({ ...p, [liga.id]: ev }))
         setPartidos(ev)
         setCargando(false)
       })
-      .catch(() => setCargando(false))
+      .catch(() => {
+        setPartidos([])
+        setCargando(false)
+      })
   }, [liga])
 
   const scroll = (dir) => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 180, behavior: 'smooth' })
   }
 
-  const tickerItems = partidos.filter(p => p.intHomeScore !== null && p.intHomeScore !== '').map(p => `${p.strHomeTeam} ${p.intHomeScore}-${p.intAwayScore} ${p.strAwayTeam}`)
+  const tickerItems = partidos
+    .filter(p => p.intHomeScore !== null && p.intHomeScore !== '')
+    .map(p => `${p.strHomeTeam} ${p.intHomeScore}-${p.intAwayScore} ${p.strAwayTeam}`)
 
   return (
     <div style={{ background: 'var(--color-background-primary)', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 8, overflow: 'hidden', marginBottom: 24 }}>
