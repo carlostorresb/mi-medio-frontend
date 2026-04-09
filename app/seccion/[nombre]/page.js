@@ -2,7 +2,10 @@ import { getArticulosPorSeccion, tiempoRelativo, SECCIONES_LABELS } from '../../
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-
+export async function generateStaticParams() {
+  const secciones = Object.keys(SECCIONES_LABELS)
+  return secciones.map((nombre) => ({ nombre }))
+}
 
 export async function generateMetadata({ params }) {
   const { nombre } = await params
