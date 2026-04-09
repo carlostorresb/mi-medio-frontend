@@ -1,138 +1,292 @@
-import fs from "fs";
-import path from "path";
-import Link from "next/link";
+import { getArticulos, tiempoRelativo, SECCIONES_LABELS } from '../lib/articulos'
+import Link from 'next/link'
 
-function cargarArticulos() {
-  const carpeta = path.join(process.cwd(), "contenido");
-  if (!fs.existsSync(carpeta)) return [];
-  const ahora = new Date();
-  return fs
-    .readdirSync(carpeta)
-    .filter((f) => f.endsWith(".json"))
-    .map((archivo) => {
-      const texto = fs.readFileSync(path.join(carpeta, archivo), "utf8");
-      const data = JSON.parse(texto);
-      return { ...data, slug: archivo.replace(".json", "") };
-    })
-    .filter((art) => {
-      const fecha = new Date(art.fecha_generacion);
-      const horas = (ahora - fecha) / (1000 * 60 * 60);
-      const puntaje = art.puntuacion || art.puntuacion_editor || 0;
-      if (puntaje >= 9) return horas < 48;
-      if (puntaje >= 7) return horas < 24;
-      return horas < 24;
-    })
-    .sort((a, b) => {
-      const pa = b.puntuacion || b.puntuacion_editor || 0;
-      const pb = a.puntuacion || a.puntuacion_editor || 0;
-      if (pa !== pb) return pa - pb;
-      return new Date(b.fecha_generacion) - new Date(a.fecha_generacion);
-    });
+export const dynamic = 'force-dynamic'
+
+function Img({ art, h = 220, priority = false }) {
+  if (art?.imagen_url) {
+    return (
+      <img
+        src={art.imagen_url}
+        alt={art.titular || ''}
+        referrerPolicy="no-referrer-when-downgrade"
+        style={{ width: '100%', height: h, objectFit: 'cover', display: 'block', background: '#d4d0c8' }}
+      />
+    )
+  }
+  return <div style={{ width: '100%', height: h, background: '#d4d0c8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <span style={{ color: '#a0a09a', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sin imagen</span>
+  </div>
 }
 
-const SECCIONES = {
-  el_pais:       { label: "El Pais",       color: "bg-red-100 text-red-800" },
-  internacional: { label: "Internacional", color: "bg-blue-100 text-blue-800" },
-  economia:      { label: "Economia",      color: "bg-green-100 text-green-800" },
-  sociedad:      { label: "Sociedad",      color: "bg-orange-100 text-orange-800" },
-  tecnologia:    { label: "Tecnologia",    color: "bg-cyan-100 text-cyan-800" },
-  ciencia:       { label: "Ciencia",       color: "bg-indigo-100 text-indigo-800" },
-  salud:         { label: "Salud",         color: "bg-pink-100 text-pink-800" },
-  cultura:       { label: "Cultura",       color: "bg-purple-100 text-purple-800" },
-  deportes:      { label: "Deportes",      color: "bg-yellow-100 text-yellow-800" },
-  opinion:       { label: "Opinion",       color: "bg-gray-100 text-gray-800" },
-};
-
-function tarjetaArticulo(art) {
-  const seccion = SECCIONES[art.seccion] ?? { label: art.seccion, color: "bg-gray-100 text-gray-700" };
-  const puntaje = art.puntuacion || art.puntuacion_editor || 0;
+function SecLabel({ sec, style = {} }) {
   return (
-    <Link key={art.slug} href={`/articulo/${art.slug}/`}
-      className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow group block">
-      <div className="flex items-center justify-between mb-3">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${seccion.color}`}>
-          {seccion.label}
-        </span>
-        {puntaje >= 9 && <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">Destacado</span>}
-        {puntaje >= 7 && puntaje < 9 && <span className="text-xs bg-orange-400 text-white px-2 py-0.5 rounded-full">Importante</span>}
+    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#004590', ...style }}>
+      {SECCIONES_LABELS[sec] || sec}
+    </span>
+  )
+}
+
+function SectionHead({ sec }) {
+  return (
+    <div style={{ borderTop: '3px solid #111', paddingTop: 8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111' }}>
+        {SECCIONES_LABELS[sec] || sec}
+      </span>
+      <Link href={`/seccion/${sec}/`} style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#004590', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        Ver todo →
+      </Link>
+    </div>
+  )
+}
+
+/* HERO PRINCIPAL — imagen grande + texto */
+function Hero({ art }) {
+  if (!art) return null
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+      <div style={{ borderRight: '1px solid #d0cfc8', paddingRight: 24 }}>
+        <Link href={`/articulo/${art.slug}/`}>
+          <Img art={art} h={380} />
+        </Link>
       </div>
-      <h3 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-snug mb-2">
-        {art.titular || art.titulo}
-      </h3>
-      <p className="text-sm text-gray-500 line-clamp-2">{art.subtitulo}</p>
-      <p className="text-xs text-gray-400 mt-3">{art.fecha_generacion?.slice(0, 10)}</p>
-    </Link>
-  );
+      <div style={{ paddingLeft: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <SecLabel sec={art.seccion} style={{ marginBottom: 10, display: 'block' }} />
+        <Link href={`/articulo/${art.slug}/`}>
+          <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 30, fontWeight: 700, lineHeight: 1.15, color: '#111', margin: '0 0 14px', letterSpacing: '-0.3px' }}>
+            {art.titular}
+          </h2>
+        </Link>
+        <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 15, color: '#444', lineHeight: 1.6, margin: '0 0 14px', fontWeight: 300, paddingBottom: 8 }}>
+          {art.subtitulo}
+        </p>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, color: '#999' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+      </div>
+    </div>
+  )
 }
 
-export default function Portada() {
-  const articulos = cargarArticulos();
-  const portada = articulos.filter(a => (a.puntuacion || a.puntuacion_editor || 0) >= 7);
-  const ultimoMinuto = articulos.filter(a => (a.puntuacion || a.puntuacion_editor || 0) < 7);
-  const destacado = portada[0];
-  const resto = portada.slice(1);
+/* ARTÍCULO SECUNDARIO con imagen arriba */
+function CardMedia({ art, showImg = true, imgH = 160 }) {
+  if (!art) return null
+  return (
+    <div style={{ paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid #e8e7e0' }}>
+      {showImg && (
+        <Link href={`/articulo/${art.slug}/`}>
+          <Img art={art} h={imgH} />
+        </Link>
+      )}
+      <SecLabel sec={art.seccion} style={{ marginTop: showImg ? 8 : 0, marginBottom: 5, display: 'block' }} />
+      <Link href={`/articulo/${art.slug}/`}>
+        <h3 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: '#111', margin: '0 0 5px' }}>
+          {art.titular}
+        </h3>
+      </Link>
+      {art.subtitulo && (
+        <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 13, color: '#555', lineHeight: 1.4, margin: '0 0 5px', fontWeight: 300 }}>
+          {art.subtitulo}
+        </p>
+      )}
+      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+    </div>
+  )
+}
+
+/* ARTÍCULO EN LISTA — solo texto */
+function ItemLista({ art, num }) {
+  if (!art) return null
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: num ? '28px 1fr' : '1fr', gap: 8, paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid #e8e7e0' }}>
+      {num && <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 20, fontWeight: 700, color: '#d0cfc8', lineHeight: 1 }}>{num}</span>}
+      <div>
+        <Link href={`/articulo/${art.slug}/`}>
+          <p style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 14, fontWeight: 700, lineHeight: 1.3, color: '#111', margin: '0 0 3px' }}>
+            {art.titular}
+          </p>
+        </Link>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+      </div>
+    </div>
+  )
+}
+
+/* ARTÍCULO HORIZONTAL — imagen pequeña a la derecha */
+function ItemHoriz({ art }) {
+  if (!art) return null
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 12, paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid #e8e7e0', alignItems: 'start' }}>
+      <div>
+        <Link href={`/articulo/${art.slug}/`}>
+          <p style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 14, fontWeight: 700, lineHeight: 1.3, color: '#111', margin: '0 0 4px' }}>
+            {art.titular}
+          </p>
+        </Link>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+      </div>
+      <Link href={`/articulo/${art.slug}/`}>
+        <Img art={art} h={60} />
+      </Link>
+    </div>
+  )
+}
+
+export default async function Portada() {
+  const todos = await getArticulos(200)
+  const s = (sec, n = 6) => todos.filter(a => a.seccion === sec).slice(0, n)
+  const hero = todos[0]
+  const segundos = todos.slice(1, 4)
+  const recientes = todos.slice(0, 10)
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Mi Medio Digital</h1>
-            <p className="text-xs text-gray-500">Noticias generadas con IA</p>
+    <>
+      {/* BARRA ÚLTIMA HORA */}
+      {todos.length > 0 && (
+        <div style={{ background: '#fff', borderBottom: '1px solid #d0cfc8', borderTop: '1px solid #d0cfc8' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'stretch' }}>
+            <div style={{ background: '#be1a1a', color: '#fff', padding: '9px 16px', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', fontFamily: "'Inter',sans-serif" }}>
+              Última Hora
+            </div>
+            <div style={{ padding: '9px 20px', fontSize: 12, color: '#333', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontFamily: "'Source Serif 4',Georgia,serif" }}>
+              {todos.slice(0, 5).map(a => a.titular).join('  ·  ')}
+            </div>
           </div>
-          <nav className="hidden md:flex gap-4 text-sm text-gray-600">
-            {Object.entries(SECCIONES).map(([key, { label }]) => (
-              <span key={key} className="hover:text-gray-900 cursor-pointer">{label}</span>
-            ))}
-          </nav>
         </div>
-      </header>
+      )}
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {articulos.length === 0 ? (
-          <div className="text-center py-24 text-gray-400">
-            <p className="text-xl">Sin noticias activas.</p>
-            <p className="text-sm mt-2">Las noticias expiran segun su importancia.</p>
-          </div>
-        ) : (
-          <>
-            {destacado && (
-              <Link href={`/articulo/${destacado.slug}/`} className="block mb-10 group">
-                <div className="bg-white rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow p-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${SECCIONES[destacado.seccion]?.color ?? "bg-gray-100 text-gray-700"}`}>
-                      {SECCIONES[destacado.seccion]?.label ?? destacado.seccion}
-                    </span>
-                    <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">Portada</span>
+      <div className='ph-container' style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 0' }}>
+        <div className='ph-main-grid' style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 0 }}>
+
+          {/* ── COLUMNA PRINCIPAL ── */}
+          <div className='ph-main' style={{ paddingRight: 28, borderRight: '1px solid #d0cfc8' }}>
+
+            {/* HERO */}
+            {hero && <Hero art={hero} />}
+
+            {/* FILA SECUNDARIA — 3 artículos */}
+            {segundos.length > 0 && (
+              <div className='ph-secundaria ph-3col' style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+                {segundos.map((art, i) => (
+                  <div key={art.slug} style={{ padding: '0 20px', borderRight: i < 2 ? '1px solid #d0cfc8' : 'none' }}>
+                    <CardMedia art={art} imgH={140} />
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight mb-3">
-                    {destacado.titular || destacado.titulo}
-                  </h2>
-                  <p className="text-lg text-gray-500">{destacado.subtitulo}</p>
-                </div>
-              </Link>
-            )}
-
-            {resto.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                {resto.map(tarjetaArticulo)}
+                ))}
               </div>
             )}
 
-            {ultimoMinuto.length > 0 && (
-              <>
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                  <h2 className="text-xl font-bold text-gray-900">Ultimo Minuto</h2>
+            {/* SECCIÓN EL PAÍS + INTERNACIONAL + ECONOMÍA */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+              {['el_pais', 'internacional', 'economia'].map((sec, i) => (
+                <div key={sec} style={{ padding: '0 20px', borderRight: i < 2 ? '1px solid #d0cfc8' : 'none' }}>
+                  <SectionHead sec={sec} />
+                  {s(sec)[0] && <CardMedia art={s(sec)[0]} imgH={150} />}
+                  {s(sec).slice(1, 4).map(art => <ItemLista key={art.slug} art={art} />)}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {ultimoMinuto.map(tarjetaArticulo)}
+              ))}
+            </div>
+
+            {/* SECCIÓN SOCIEDAD — ancho completo */}
+            {s('sociedad').length > 0 && (
+              <div style={{ borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+                <SectionHead sec="sociedad" />
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 0 }}>
+                  <div style={{ paddingRight: 20, borderRight: '1px solid #d0cfc8' }}>
+                    {s('sociedad')[0] && <CardMedia art={s('sociedad')[0]} imgH={200} />}
+                  </div>
+                  <div style={{ padding: '0 20px', borderRight: '1px solid #d0cfc8' }}>
+                    {s('sociedad')[1] && <CardMedia art={s('sociedad')[1]} imgH={130} />}
+                    {s('sociedad')[2] && <ItemLista art={s('sociedad')[2]} />}
+                  </div>
+                  <div style={{ paddingLeft: 20 }}>
+                    {s('sociedad')[3] && <CardMedia art={s('sociedad')[3]} imgH={130} />}
+                    {s('sociedad')[4] && <ItemLista art={s('sociedad')[4]} />}
+                  </div>
                 </div>
-              </>
+              </div>
             )}
-          </>
-        )}
+
+            {/* SECCIÓN TECNOLOGÍA + CIENCIA */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+              {['tecnologia', 'ciencia'].map((sec, i) => (
+                <div key={sec} style={{ padding: '0 20px', borderRight: i === 0 ? '1px solid #d0cfc8' : 'none' }}>
+                  <SectionHead sec={sec} />
+                  {s(sec)[0] && <CardMedia art={s(sec)[0]} imgH={160} />}
+                  {s(sec).slice(1, 4).map(art => <ItemLista key={art.slug} art={art} />)}
+                </div>
+              ))}
+            </div>
+
+            {/* SECCIÓN SALUD + CULTURA */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+              {['salud', 'cultura'].map((sec, i) => (
+                <div key={sec} style={{ padding: '0 20px', borderRight: i === 0 ? '1px solid #d0cfc8' : 'none' }}>
+                  <SectionHead sec={sec} />
+                  {s(sec)[0] && <CardMedia art={s(sec)[0]} imgH={150} />}
+                  {s(sec).slice(1, 3).map(art => <ItemLista key={art.slug} art={art} />)}
+                </div>
+              ))}
+            </div>
+
+            {/* SECCIÓN DEPORTES — 4 columnas */}
+            {s('deportes').length > 0 && (
+              <div style={{ borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+                <SectionHead sec="deportes" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0 }}>
+                  {s('deportes', 4).map((art, i) => (
+                    <div key={art.slug} style={{ padding: '0 16px', borderRight: i < 3 ? '1px solid #d0cfc8' : 'none' }}>
+                      <CardMedia art={art} imgH={120} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* OPINIÓN */}
+            {s('opinion').length > 0 && (
+              <div style={{ paddingBottom: 24, marginBottom: 24 }}>
+                <SectionHead sec="opinion" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0 }}>
+                  {s('opinion', 3).map((art, i) => (
+                    <div key={art.slug} style={{ padding: '0 20px', borderRight: i < 2 ? '1px solid #d0cfc8' : 'none' }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#d0cfc8', marginBottom: 10 }} />
+                      <Link href={`/articulo/${art.slug}/`}>
+                        <p style={{ fontFamily: "'Playfair Display',Georgia,serif", fontStyle: 'italic', fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: '#111', margin: '0 0 5px' }}>
+                          {art.titular}
+                        </p>
+                      </Link>
+                      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{art.periodista}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* ── SIDEBAR ── */}
+          <div className='ph-sidebar' style={{ paddingLeft: 24 }}>
+
+            {/* MÁS LEÍDAS */}
+            <div style={{ borderTop: '3px solid #111', paddingTop: 8, marginBottom: 20 }}>
+              <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111', margin: '0 0 16px' }}>
+                Más Leídas
+              </h3>
+              {recientes.map((art, i) => (
+                <ItemLista key={art.slug} art={art} num={i + 1} />
+              ))}
+            </div>
+
+            {/* ÚLTIMAS POR SECCIÓN */}
+            <div style={{ borderTop: '3px solid #111', paddingTop: 8, marginBottom: 20 }}>
+              <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111', margin: '0 0 16px' }}>
+                Recientes
+              </h3>
+              {todos.slice(0, 8).map(art => <ItemHoriz key={art.slug} art={art} />)}
+            </div>
+
+          </div>
+
+        </div>
       </div>
-    </main>
-  );
+    </>
+  )
 }
