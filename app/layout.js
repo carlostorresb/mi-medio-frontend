@@ -123,10 +123,38 @@ hr.divider-bold{border:none;border-top:2px solid var(--black);margin:0}
 @media(max-width:600px){.masthead-title{font-size:26px}.secondary-grid{grid-template-columns:1fr}.seccion-grid{grid-template-columns:1fr}.header-top{flex-direction:column;gap:8px}.hero-title{font-size:22px}.articulo-headline{font-size:24px}.footer-grid{grid-template-columns:repeat(2,1fr)}.footer-bottom{flex-direction:column;gap:12px;text-align:center}.footer-logo{font-size:22px}}
 `
 
+const BASE = 'https://noticia24x7.com'
+
 export const metadata = {
-  title: 'noticia24x7.com — Información continua',
-  description: 'Medio de noticias generado con inteligencia artificial. Cobertura continua de Perú y el mundo.',
-  metadataBase: new URL('https://noticia24x7.com'),
+  metadataBase: new URL(BASE),
+  title: {
+    default: 'noticia24x7.com — Información continua',
+    template: '%s · noticia24x7.com',
+  },
+  description: 'Medio de noticias generado con inteligencia artificial. Cobertura continua de Peru y el mundo.',
+  keywords: ['noticias peru', 'noticias hoy', 'noticia24x7', 'periodismo digital', 'inteligencia artificial'],
+  authors: [{ name: 'noticia24x7.com' }],
+  creator: 'noticia24x7.com',
+  publisher: 'noticia24x7.com',
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: 'website',
+    locale: 'es_PE',
+    url: BASE,
+    siteName: 'noticia24x7.com',
+    title: 'noticia24x7.com — Información continua',
+    description: 'Medio de noticias generado con inteligencia artificial. Cobertura continua de Peru y el mundo.',
+    images: [{ url: `${BASE}/og-default.jpg`, width: 1200, height: 630, alt: 'noticia24x7.com' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'noticia24x7.com — Información continua',
+    description: 'Medio de noticias generado con inteligencia artificial.',
+    images: [`${BASE}/og-default.jpg`],
+  },
+  alternates: {
+    canonical: BASE,
+  },
 }
 
 const SECCIONES = [
@@ -146,16 +174,13 @@ function Header() {
   const fecha = new Date().toLocaleDateString('es-PE', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   })
-
   return (
     <header className="site-header">
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div className="header-top">
           <span className="header-meta">{fecha}</span>
           <div className="masthead">
-            <a href="/">
-              <h1 className="masthead-title">noticia<span>24x7</span>.com</h1>
-            </a>
+            <a href="/"><h1 className="masthead-title">noticia<span>24x7</span>.com</h1></a>
             <p className="masthead-tagline">Información continua · Generado con Inteligencia Artificial</p>
           </div>
           <div className="header-search">
@@ -164,7 +189,8 @@ function Header() {
             </form>
           </div>
         </div>
-        <nav className="site-nav"><a href="/">Inicio</a>
+        <nav className="site-nav">
+          <a href="/">Inicio</a>
           {SECCIONES.map(s => (
             <a key={s.slug} href={`/seccion/${s.slug}/`}>{s.label}</a>
           ))}
@@ -202,14 +228,14 @@ function Footer() {
           </div>
           <div className="footer-col">
             <div className="footer-col-title">Legal</div>
-            <a href="https://unsplash.com" target="_blank" rel="noopener">Créditos de imágenes</a>
+            <a href="/">Aviso Legal</a>
           </div>
         </div>
         <div className="footer-bottom">
           <a href="/" className="footer-logo">noticia<span>24x7</span>.com</a>
           <div>
             <div className="footer-legal">© {new Date().getFullYear()} noticia24x7.com · Lima, Perú</div>
-            <div className="footer-ai">Contenido generado con inteligencia artificial · Imágenes: Unsplash</div>
+            <div className="footer-ai">Contenido generado con inteligencia artificial</div>
           </div>
         </div>
       </div>
