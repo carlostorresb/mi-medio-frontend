@@ -1,4 +1,4 @@
-import feedparser, json, re, base64, os, urllib.request, urllib.parse
+import json, re, base64, os, urllib.request, urllib.parse, http.client, html
 from datetime import datetime
 from pathlib import Path
 
@@ -6,50 +6,79 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = "carlostorresb/mi-medio-digital"
 GITHUB_BRANCH = "main"
 
+MEDIASTACK_KEY = "b17d7c1839695a1964b1970fb8137365"
+
 SECCIONES = {
     "el_pais": {
         "nombre": "El Pais",
-        "feeds": ["https://elcomercio.pe/rss/politica.xml","https://feeds.bbci.co.uk/mundo/america_latina/rss.xml"],
+        "categories": "general",
+        "countries": "pe",
+        "languages": "es",
+        "keywords": "",
         "estilo": "Eres periodista peruano. Cubres noticias nacionales de Peru. Escribes en español peruano neutral.",
     },
     "internacional": {
         "nombre": "Internacional",
-        "feeds": ["https://feeds.bbci.co.uk/mundo/rss.xml"],
+        "categories": "general",
+        "countries": "",
+        "languages": "es,en",
+        "keywords": "",
         "estilo": "Eres corresponsal internacional. Cubres noticias del mundo con enfoque en Latinoamerica.",
     },
     "economia": {
         "nombre": "Economia",
-        "feeds": ["https://gestion.pe/feed/","https://feeds.bbci.co.uk/mundo/economia/rss.xml"],
+        "categories": "business",
+        "countries": "pe,us,ar,cl,co,mx",
+        "languages": "es,en",
+        "keywords": "",
         "estilo": "Eres periodista economico peruano. Cubres finanzas y negocios.",
     },
     "sociedad": {
         "nombre": "Sociedad",
-        "feeds": ["https://feeds.bbci.co.uk/mundo/rss.xml"],
+        "categories": "general",
+        "countries": "pe",
+        "languages": "es",
+        "keywords": "sociedad,educacion,justicia",
         "estilo": "Eres periodista de sociedad. Cubres educacion, justicia y vida cotidiana en Peru.",
     },
     "tecnologia": {
         "nombre": "Tecnologia",
-        "feeds": ["https://feeds.bbci.co.uk/mundo/ciencia_y_tecnologia/rss.xml","https://hipertextual.com/feed"],
+        "categories": "technology",
+        "countries": "",
+        "languages": "es,en",
+        "keywords": "",
         "estilo": "Eres periodista de tecnologia. Cubres IA, startups e innovacion digital.",
     },
     "ciencia": {
         "nombre": "Ciencia",
-        "feeds": ["https://feeds.bbci.co.uk/mundo/ciencia_y_tecnologia/rss.xml"],
+        "categories": "science",
+        "countries": "",
+        "languages": "es,en",
+        "keywords": "",
         "estilo": "Eres periodista cientifico. Explicas descubrimientos cientificos de forma accesible.",
     },
     "salud": {
         "nombre": "Salud",
-        "feeds": ["https://feeds.bbci.co.uk/mundo/rss.xml"],
+        "categories": "health",
+        "countries": "",
+        "languages": "es,en",
+        "keywords": "",
         "estilo": "Eres periodista de salud. Cubres noticias medicas y salud publica.",
     },
     "cultura": {
         "nombre": "Cultura",
-        "feeds": ["https://feeds.bbci.co.uk/mundo/rss.xml"],
+        "categories": "entertainment",
+        "countries": "pe,es,ar,mx",
+        "languages": "es",
+        "keywords": "",
         "estilo": "Eres periodista cultural peruano. Cubres arte, musica, cine y literatura.",
     },
     "deportes": {
         "nombre": "Deportes",
-        "feeds": ["https://www.libero.pe/rss/futbol-peruano.xml","https://feeds.bbci.co.uk/sport/football/rss.xml"],
+        "categories": "sports",
+        "countries": "pe,ar,es,br",
+        "languages": "es,en",
+        "keywords": "",
         "estilo": "Eres periodista deportivo peruano. Cubres futbol peruano, Premier League y el Inter Miami de Messi.",
     },
 }
@@ -59,20 +88,49 @@ PROCESADOS = Path("noticias_procesadas.json")
 def cargar(): return set(json.loads(PROCESADOS.read_text()).get("urls",[])) if PROCESADOS.exists() else set()
 def guardar(urls): PROCESADOS.write_text(json.dumps({"urls":list(urls)},indent=2))
 
-def noticias(feeds, procesados):
+def noticias(cfg, procesados):
+    """Obtiene noticias desde Mediastack API con imagen incluida."""
+    params = {
+        "access_key": MEDIASTACK_KEY,
+        "limit": 10,
+        "sort": "published_desc",
+        "categories": cfg["categories"],
+    }
+    if cfg.get("countries"): params["countries"] = cfg["countries"]
+    if cfg.get("languages"): params["languages"] = cfg["languages"]
+    if cfg.get("keywords"):  params["keywords"]  = cfg["keywords"]
+
+    query = urllib.parse.urlencode(params)
     result = []
-    for f in feeds:
-        try:
-            for e in feedparser.parse(f).entries[:5]:
-                u = e.get("link","")
-                if u and u not in procesados:
-                    result.append({"titulo":e.get("title",""),"resumen":e.get("summary","")[:400],"url":u})
-                    if len(result)>=2: return result
-        except: pass
+    try:
+        conn = http.client.HTTPConnection("api.mediastack.com", timeout=15)
+        conn.request("GET", f"/v1/news?{query}")
+        resp = conn.getresponse()
+        data = json.loads(resp.read().decode("utf-8"))
+        conn.close()
+
+        if "error" in data:
+            print(f"  Error Mediastack: {data['error'].get('message','')}")
+            return []
+
+        for art in data.get("data", []):
+            url = art.get("url", "")
+            if not url or url in procesados:
+                continue
+            result.append({
+                "titulo":   html.unescape(art.get("title", "")),
+                "resumen":  html.unescape((art.get("description") or "")[:400]),
+                "url":      url,
+                "imagen":   art.get("image") or "",   # ← viene gratis de Mediastack
+            })
+            if len(result) >= 2:
+                break
+    except Exception as e:
+        print(f"  Error conectando Mediastack: {e}")
     return result
 
 def ollama(prompt):
-    data = json.dumps({"model":"llama3.2:1b","prompt":prompt,"stream":False}).encode()
+    data = json.dumps({"model":"mistral","prompt":prompt,"stream":False}).encode()
     req = urllib.request.Request("http://localhost:11434/api/generate",data=data,headers={"Content-Type":"application/json"})
     with urllib.request.urlopen(req) as r:
         return json.loads(r.read())["response"].strip()
@@ -93,14 +151,18 @@ RESUMEN: {noticia['resumen']}
         start = t.find("{")
         end = t.rfind("}") + 1
         if start == -1:
-            # Intenta extraer cualquier texto util
             raise ValueError("No JSON")
         t_json = t[start:end]
         t_json = re.sub(r',\s*}', '}', t_json)
         t_json = re.sub(r',\s*]', ']', t_json)
         t_json = re.sub(r'[\x00-\x1f]', ' ', t_json)
         a = json.loads(t_json)
-        a.update({"seccion":seccion,"url_fuente":noticia["url"],"fecha_generacion":datetime.now().isoformat()})
+        a.update({
+            "seccion":          seccion,
+            "url_fuente":       noticia["url"],
+            "imagen_url":       noticia.get("imagen", ""),   # ← nuevo campo
+            "fecha_generacion": datetime.now().isoformat(),
+        })
         return a
     except Exception as e:
         print(f"  Error periodista: {e}"); return None
@@ -120,7 +182,6 @@ Si es malo: {{"aprobado":false}}"""
         start = t.find("{")
         end = t.rfind("}") + 1
         if start == -1:
-            # Intenta extraer cualquier texto util
             raise ValueError("No JSON")
         t_json = t[start:end]
         t_json = re.sub(r',\s*}', '}', t_json)
@@ -142,7 +203,7 @@ def publicar(art):
     if not GITHUB_TOKEN: return
     ruta = f"contenido/{slug}.json"
     payload = json.dumps({
-        "message":f"[IA] {art['seccion']}: {art.get('titular', art.get('titulo','articulo'))[:60]}",
+        "message":f"[IA] {art['seccion']}: {art.get('titular','articulo')[:60]}",
         "content":base64.b64encode(json.dumps(art,ensure_ascii=False,indent=2).encode()).decode(),
         "branch":GITHUB_BRANCH
     }).encode()
@@ -163,8 +224,8 @@ def main(secciones=None):
     for clave in (secciones or list(SECCIONES.keys())):
         cfg = SECCIONES[clave]
         print(f"Seccion: {cfg['nombre'].upper()}")
-        arts = noticias(cfg["feeds"], procesados)
-        if not arts: print("  Sin noticias\n"); continue
+        arts = noticias(cfg, procesados)
+        if not arts: print("  Sin noticias nuevas\n"); continue
         for n in arts:
             print(f"  -> {n['titulo'][:60]}...")
             nuevas.add(n["url"])
@@ -172,8 +233,8 @@ def main(secciones=None):
             a = periodista(n, cfg["estilo"], clave)
             if not a: continue
             print("  Editor revisando...")
-            af = a
-            
+            af = editor(a)
+            if not af: print("  Rechazado por editor\n"); continue
             publicar(af)
         print()
     procesados.update(nuevas); guardar(procesados)
