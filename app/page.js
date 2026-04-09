@@ -1,9 +1,7 @@
 import { getArticulos, tiempoRelativo, SECCIONES_LABELS } from '../lib/articulos'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
-
-function Img({ art, h = 220, priority = false }) {
+function Img({ art, h = 220 }) {
   if (art?.imagen_url) {
     return (
       <img
@@ -14,9 +12,11 @@ function Img({ art, h = 220, priority = false }) {
       />
     )
   }
-  return <div style={{ width: '100%', height: h, background: '#d4d0c8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <span style={{ color: '#a0a09a', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sin imagen</span>
-  </div>
+  return (
+    <div style={{ width: '100%', height: h, background: '#d4d0c8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: '#a0a09a', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sin imagen</span>
+    </div>
+  )
 }
 
 function SecLabel({ sec, style = {} }) {
@@ -40,7 +40,6 @@ function SectionHead({ sec }) {
   )
 }
 
-/* HERO PRINCIPAL — imagen grande + texto */
 function Hero({ art }) {
   if (!art) return null
   return (
@@ -60,13 +59,14 @@ function Hero({ art }) {
         <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 15, color: '#444', lineHeight: 1.6, margin: '0 0 14px', fontWeight: 300, paddingBottom: 8 }}>
           {art.subtitulo}
         </p>
-        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, color: '#999' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, color: '#999' }}>
+          {tiempoRelativo(art.fecha_generacion)}
+        </span>
       </div>
     </div>
   )
 }
 
-/* ARTÍCULO SECUNDARIO con imagen arriba */
 function CardMedia({ art, showImg = true, imgH = 160 }) {
   if (!art) return null
   return (
@@ -87,12 +87,13 @@ function CardMedia({ art, showImg = true, imgH = 160 }) {
           {art.subtitulo}
         </p>
       )}
-      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>
+        {tiempoRelativo(art.fecha_generacion)}
+      </span>
     </div>
   )
 }
 
-/* ARTÍCULO EN LISTA — solo texto */
 function ItemLista({ art, num }) {
   if (!art) return null
   return (
@@ -104,13 +105,14 @@ function ItemLista({ art, num }) {
             {art.titular}
           </p>
         </Link>
-        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>
+          {tiempoRelativo(art.fecha_generacion)}
+        </span>
       </div>
     </div>
   )
 }
 
-/* ARTÍCULO HORIZONTAL — imagen pequeña a la derecha */
 function ItemHoriz({ art }) {
   if (!art) return null
   return (
@@ -121,7 +123,9 @@ function ItemHoriz({ art }) {
             {art.titular}
           </p>
         </Link>
-        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{tiempoRelativo(art.fecha_generacion)}</span>
+        <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>
+          {tiempoRelativo(art.fecha_generacion)}
+        </span>
       </div>
       <Link href={`/articulo/${art.slug}/`}>
         <Img art={art} h={60} />
@@ -139,7 +143,6 @@ export default async function Portada() {
 
   return (
     <>
-      {/* BARRA ÚLTIMA HORA */}
       {todos.length > 0 && (
         <div style={{ background: '#fff', borderBottom: '1px solid #d0cfc8', borderTop: '1px solid #d0cfc8' }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'stretch' }}>
@@ -147,24 +150,20 @@ export default async function Portada() {
               Última Hora
             </div>
             <div style={{ padding: '9px 20px', fontSize: 12, color: '#333', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontFamily: "'Source Serif 4',Georgia,serif" }}>
-              {todos.slice(0, 5).map(a => a.titular).join('  ·  ')}
+              {todos.slice(0, 5).map(a => a.titular).join(' · ')}
             </div>
           </div>
         </div>
       )}
 
-      <div className='ph-container' style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 0' }}>
-        <div className='ph-main-grid' style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 0 }}>
-
-          {/* ── COLUMNA PRINCIPAL ── */}
-          <div className='ph-main' style={{ paddingRight: 28, borderRight: '1px solid #d0cfc8' }}>
-
-            {/* HERO */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 0 }}>
+          {/* COLUMNA PRINCIPAL */}
+          <div style={{ paddingRight: 28, borderRight: '1px solid #d0cfc8' }}>
             {hero && <Hero art={hero} />}
 
-            {/* FILA SECUNDARIA — 3 artículos */}
             {segundos.length > 0 && (
-              <div className='ph-secundaria ph-3col' style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
                 {segundos.map((art, i) => (
                   <div key={art.slug} style={{ padding: '0 20px', borderRight: i < 2 ? '1px solid #d0cfc8' : 'none' }}>
                     <CardMedia art={art} imgH={140} />
@@ -173,7 +172,6 @@ export default async function Portada() {
               </div>
             )}
 
-            {/* SECCIÓN EL PAÍS + INTERNACIONAL + ECONOMÍA */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
               {['el_pais', 'internacional', 'economia'].map((sec, i) => (
                 <div key={sec} style={{ padding: '0 20px', borderRight: i < 2 ? '1px solid #d0cfc8' : 'none' }}>
@@ -184,7 +182,6 @@ export default async function Portada() {
               ))}
             </div>
 
-            {/* SECCIÓN SOCIEDAD — ancho completo */}
             {s('sociedad').length > 0 && (
               <div style={{ borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
                 <SectionHead sec="sociedad" />
@@ -204,7 +201,6 @@ export default async function Portada() {
               </div>
             )}
 
-            {/* SECCIÓN TECNOLOGÍA + CIENCIA */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
               {['tecnologia', 'ciencia'].map((sec, i) => (
                 <div key={sec} style={{ padding: '0 20px', borderRight: i === 0 ? '1px solid #d0cfc8' : 'none' }}>
@@ -215,7 +211,6 @@ export default async function Portada() {
               ))}
             </div>
 
-            {/* SECCIÓN SALUD + CULTURA */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
               {['salud', 'cultura'].map((sec, i) => (
                 <div key={sec} style={{ padding: '0 20px', borderRight: i === 0 ? '1px solid #d0cfc8' : 'none' }}>
@@ -226,7 +221,6 @@ export default async function Portada() {
               ))}
             </div>
 
-            {/* SECCIÓN DEPORTES — 4 columnas */}
             {s('deportes').length > 0 && (
               <div style={{ borderBottom: '1px solid #d0cfc8', paddingBottom: 24, marginBottom: 24 }}>
                 <SectionHead sec="deportes" />
@@ -240,7 +234,6 @@ export default async function Portada() {
               </div>
             )}
 
-            {/* OPINIÓN */}
             {s('opinion').length > 0 && (
               <div style={{ paddingBottom: 24, marginBottom: 24 }}>
                 <SectionHead sec="opinion" />
@@ -253,19 +246,15 @@ export default async function Portada() {
                           {art.titular}
                         </p>
                       </Link>
-                      <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: '#aaa' }}>{art.periodista}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
           </div>
 
-          {/* ── SIDEBAR ── */}
-          <div className='ph-sidebar' style={{ paddingLeft: 24 }}>
-
-            {/* MÁS LEÍDAS */}
+          {/* SIDEBAR */}
+          <div style={{ paddingLeft: 24 }}>
             <div style={{ borderTop: '3px solid #111', paddingTop: 8, marginBottom: 20 }}>
               <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111', margin: '0 0 16px' }}>
                 Más Leídas
@@ -274,17 +263,13 @@ export default async function Portada() {
                 <ItemLista key={art.slug} art={art} num={i + 1} />
               ))}
             </div>
-
-            {/* ÚLTIMAS POR SECCIÓN */}
             <div style={{ borderTop: '3px solid #111', paddingTop: 8, marginBottom: 20 }}>
               <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111', margin: '0 0 16px' }}>
                 Recientes
               </h3>
               {todos.slice(0, 8).map(art => <ItemHoriz key={art.slug} art={art} />)}
             </div>
-
           </div>
-
         </div>
       </div>
     </>
