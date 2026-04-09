@@ -45,7 +45,7 @@ export default function Articulo({ params }) {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold text-gray-900 hover:text-blue-700">
-            ← Mi Medio Digital
+            ← Inicio
           </Link>
           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${seccion.color}`}>
             {seccion.label}
