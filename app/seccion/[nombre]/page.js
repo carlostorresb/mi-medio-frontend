@@ -2,7 +2,7 @@ import { getArticulosPorSeccion, tiempoRelativo, SECCIONES_LABELS } from '../../
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
+
 
 export async function generateMetadata({ params }) {
   const { nombre } = await params

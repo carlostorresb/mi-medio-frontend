@@ -2,7 +2,7 @@ import { getArticulosPorSeccion, tiempoRelativo } from '../../../lib/articulos'
 import DeportesWidget from '../../components/DeportesWidget'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
+
 export const metadata = { title: 'Deportes — noticia24x7.com' }
 
 function Img({ art, height = 160 }) {
