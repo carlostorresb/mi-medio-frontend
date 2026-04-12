@@ -33,7 +33,8 @@ function TagBadge({ tag }) {
 }
 
 function readTime(text = '') {
-  const words = text.split(/\s+/).length
+  const str = Array.isArray(text) ? text.join(' ') : String(text || '')
+  const words = str.split(/\s+/).filter(Boolean).length
   const mins = Math.max(1, Math.round(words / 200))
   return `${mins} min lectura`
 }
