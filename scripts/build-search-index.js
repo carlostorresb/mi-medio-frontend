@@ -33,8 +33,8 @@ for (const archivo of archivos) {
       imagen_url:       data.imagen_url       || '',
       fuente_nombre:    data.fuente_nombre    || '',
       puntuacion:       data.puntuacion       || data.puntuacion_editor || 0,
-      // Primeras 300 chars del cuerpo para snippet
-      snippet:          (data.cuerpo || '').slice(0, 300),
+      // Primeras 300 chars del cuerpo para snippet (cuerpo puede ser array o string)
+      snippet: (Array.isArray(data.cuerpo) ? data.cuerpo.join(' ') : (data.cuerpo || '')).slice(0, 300),
     })
   } catch (e) {
     console.warn(`[search-index] error leyendo ${archivo}:`, e.message)
