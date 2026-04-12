@@ -1,23 +1,6 @@
 import Link from 'next/link'
 import { SECCIONES_LABELS, tiempoRelativo } from '../../lib/utils'
-
-function ArticleImage({ art, className = '' }) {
-  if (art.imagen_url) {
-    return (
-      <img
-        src={art.imagen_url}
-        alt={art.titular}
-        loading="lazy"
-        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${className}`}
-      />
-    )
-  }
-  return (
-    <div className={`w-full h-full bg-muted flex items-center justify-center ${className}`}>
-      <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Sin imagen</span>
-    </div>
-  )
-}
+import { SmartImg } from './SmartImg'
 
 export function ArticleCard({ art, featured = false }) {
   const seccionLabel = SECCIONES_LABELS[art.seccion] || art.seccion
@@ -29,7 +12,7 @@ export function ArticleCard({ art, featured = false }) {
     >
       <article className="flex flex-col h-full">
         <div className="relative aspect-[16/9] overflow-hidden">
-          <ArticleImage art={art} />
+          <SmartImg src={art.imagen_url} alt={art.titular} width={600} className="transition-transform duration-500 group-hover:scale-105" />
         </div>
 
         <div className="flex flex-col flex-grow p-5">

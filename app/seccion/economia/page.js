@@ -1,70 +1,283 @@
 import { getArticulosPorSeccion, tiempoRelativo } from '../../../lib/articulos'
+import { optimizeImage } from '../../../lib/utils'
 import MercadosWidget from '../../components/MercadosWidget'
 import Link from 'next/link'
-
+import Image from 'next/image'
 
 export const metadata = { title: 'Economía — noticia24x7.com' }
 
-function Img({ art, height = 160 }) {
-  if (art.imagen_url) return <img src={art.imagen_url} alt={art.titular} style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
-  return <div style={{ width: '100%', height, background: '#c8c4b8' }} />
+function ArticleImg({ art, fill = false, width = 600, className = '' }) {
+  if (!art.imagen_url) {
+    return (
+      <div className={`bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center ${className}`}>
+        <span className="text-[9px] uppercase tracking-widest text-neutral-400">Sin imagen</span>
+      </div>
+    )
+  }
+  return (
+    <img
+      src={optimizeImage(art.imagen_url, width)}
+      alt={art.titular}
+      loading="lazy"
+      className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03] ${className}`}
+    />
+  )
 }
 
+function TagBadge({ tag }) {
+  return (
+    <span className="inline-block text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-sm">
+      {tag}
+    </span>
+  )
+}
+
+function readTime(text = '') {
+  const words = text.split(/\s+/).length
+  const mins = Math.max(1, Math.round(words / 200))
+  return `${mins} min lectura`
+}
+
+/* ── Hero article ───────────────────────────────────────── */
+function HeroArticle({ art }) {
+  const tiempo = tiempoRelativo(art.fecha_generacion)
+  const tag = art.tags?.[0]
+  return (
+    <Link href={`/articulo/${art.slug}/`} className="group block">
+      <article>
+        <div className="relative overflow-hidden mb-4" style={{ aspectRatio: '16/9' }}>
+          <ArticleImg art={art} width={1200} className="rounded-sm" />
+          {tag && (
+            <div className="absolute bottom-3 left-3">
+              <TagBadge tag={tag} />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-destructive">Economía</span>
+          <span className="text-border text-xs">·</span>
+          <span className="text-[10px] text-muted-foreground">{tiempo}</span>
+          {art.cuerpo && (
+            <>
+              <span className="text-border text-xs">·</span>
+              <span className="text-[10px] text-muted-foreground">{readTime(art.cuerpo)}</span>
+            </>
+          )}
+        </div>
+        <h2 className="font-serif text-3xl font-bold leading-tight text-foreground group-hover:text-destructive transition-colors duration-200 mb-3">
+          {art.titular}
+        </h2>
+        {art.subtitulo && (
+          <p className="text-[15px] text-muted-foreground leading-relaxed line-clamp-3">
+            {art.subtitulo}
+          </p>
+        )}
+        {art.fuente_nombre && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="w-5 h-px bg-border inline-block" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{art.fuente_nombre}</span>
+          </div>
+        )}
+      </article>
+    </Link>
+  )
+}
+
+/* ── Compact list article ───────────────────────────────── */
+function ListArticle({ art, showBorder = true }) {
+  const tiempo = tiempoRelativo(art.fecha_generacion)
+  return (
+    <Link href={`/articulo/${art.slug}/`} className="group flex gap-3 py-4 first:pt-0">
+      <article className={`flex gap-3 w-full ${showBorder ? 'border-b border-border pb-4' : ''}`}>
+        {art.imagen_url && (
+          <div className="shrink-0 w-20 h-16 overflow-hidden rounded-sm">
+            <img
+              src={optimizeImage(art.imagen_url, 300)}
+              alt={art.titular}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-serif text-[15px] font-bold leading-snug text-foreground group-hover:text-destructive transition-colors line-clamp-2 mb-1">
+            {art.titular}
+          </h3>
+          <span className="text-[10px] text-muted-foreground">{tiempo}</span>
+        </div>
+      </article>
+    </Link>
+  )
+}
+
+/* ── Grid article card ──────────────────────────────────── */
+function GridCard({ art }) {
+  const tiempo = tiempoRelativo(art.fecha_generacion)
+  const tag = art.tags?.[0]
+  return (
+    <Link href={`/articulo/${art.slug}/`} className="group block">
+      <article className="border-t border-border pt-4">
+        {art.imagen_url && (
+          <div className="relative overflow-hidden mb-3" style={{ aspectRatio: '3/2' }}>
+            <img
+              src={optimizeImage(art.imagen_url, 600)}
+              alt={art.titular}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 rounded-sm"
+            />
+            {tag && (
+              <div className="absolute bottom-2 left-2">
+                <TagBadge tag={tag} />
+              </div>
+            )}
+          </div>
+        )}
+        <h3 className="font-serif text-[17px] font-bold leading-snug text-foreground group-hover:text-destructive transition-colors mb-2 line-clamp-3">
+          {art.titular}
+        </h3>
+        {art.subtitulo && (
+          <p className="text-[13px] text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
+            {art.subtitulo}
+          </p>
+        )}
+        <span className="text-[10px] text-muted-foreground">{tiempo}</span>
+      </article>
+    </Link>
+  )
+}
+
+/* ── Highlighted large card ─────────────────────────────── */
+function FeaturedSideCard({ art }) {
+  const tiempo = tiempoRelativo(art.fecha_generacion)
+  return (
+    <Link href={`/articulo/${art.slug}/`} className="group block bg-neutral-50 dark:bg-neutral-900 border border-border rounded-sm overflow-hidden">
+      <article>
+        {art.imagen_url && (
+          <div className="overflow-hidden" style={{ aspectRatio: '16/7' }}>
+            <img
+              src={optimizeImage(art.imagen_url, 600)}
+              alt={art.titular}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+            />
+          </div>
+        )}
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-destructive">Destacado</span>
+            <span className="text-border text-xs">·</span>
+            <span className="text-[10px] text-muted-foreground">{tiempo}</span>
+          </div>
+          <h3 className="font-serif text-[18px] font-bold leading-snug text-foreground group-hover:text-destructive transition-colors mb-2">
+            {art.titular}
+          </h3>
+          {art.subtitulo && (
+            <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
+              {art.subtitulo}
+            </p>
+          )}
+        </div>
+      </article>
+    </Link>
+  )
+}
+
+/* ── Main page ──────────────────────────────────────────── */
 export default async function EconomiaPage() {
   const articulos = await getArticulosPorSeccion('economia', 20)
-  const hero = articulos[0]
-  const resto = articulos.slice(1)
+  const hero       = articulos[0]
+  const sidebar    = articulos.slice(1, 5)   // up to 4 en sidebar
+  const grid       = articulos.slice(5, 14)  // hasta 9 en grid
+  const destacado  = articulos[14]           // card grande al lado del grid
+  const extras     = articulos.slice(15)
 
   return (
-    <div style={{ background: "#FDF0E6", minHeight: "100vh" }}>
-      <div className="container" style={{ background: "#FDF0E6" }}>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        <div style={{ borderBottom: '3px solid #111', marginBottom: 0, paddingBottom: 12, paddingTop: 24 }}>
-          <h1 style={{ fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111', margin: 0 }}>Economía</h1>
+        {/* ── Section header ── */}
+        <div className="flex items-baseline justify-between border-b-[3px] border-foreground mb-0 pb-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-block w-1.5 h-5 bg-destructive rounded-sm" />
+            <h1 className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">Economía</h1>
+          </div>
+          {articulos.length > 0 && (
+            <span className="text-[10px] text-muted-foreground">{articulos.length} artículos</span>
+          )}
         </div>
 
-        <MercadosWidget />
+        {/* ── Mercados widget ── */}
+        <div className="mb-8">
+          <MercadosWidget />
+        </div>
 
-        <div style={{ marginTop: 32 }}>
-          {hero && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 32, marginBottom: 32, paddingBottom: 32, borderBottom: '2px solid #d0cfc8' }}>
-              <div style={{ borderRight: '1px solid #d0cfc8', paddingRight: 32 }}>
-                <Link href={`/articulo/${hero.slug}/`}><Img art={hero} height={260} /></Link>
-                <Link href={`/articulo/${hero.slug}/`}>
-                  <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 26, fontWeight: 700, lineHeight: 1.2, color: '#111', margin: '12px 0 8px' }}>{hero.titular}</h2>
-                </Link>
-                <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 15, color: '#444', lineHeight: 1.5 }}>{hero.subtitulo}</p>
-                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999', marginTop: 6 }}>{tiempoRelativo(hero.fecha_generacion)}</div>
-              </div>
-              <div>
-                {articulos.slice(1, 4).map((art, i) => (
-                  <div key={art.slug} style={{ paddingBottom: 14, marginBottom: 14, borderBottom: i < 2 ? '1px solid #d0cfc8' : 'none' }}>
-                    <Link href={`/articulo/${art.slug}/`}>
-                      <h3 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: '#111', margin: '0 0 4px' }}>{art.titular}</h3>
-                    </Link>
-                    <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 13, color: '#555', margin: '0 0 4px' }}>{art.subtitulo}</p>
-                    <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999' }}>{tiempoRelativo(art.fecha_generacion)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {resto.length > 3 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
-              {resto.slice(3).map(art => (
-                <div key={art.slug} style={{ paddingBottom: 16, borderBottom: '1px solid #d0cfc8' }}>
-                  <Link href={`/articulo/${art.slug}/`}><Img art={art} height={140} /></Link>
-                  <Link href={`/articulo/${art.slug}/`}>
-                    <h3 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 16, fontWeight: 700, lineHeight: 1.25, color: '#111', margin: '8px 0 4px' }}>{art.titular}</h3>
-                  </Link>
-                  <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999' }}>{tiempoRelativo(art.fecha_generacion)}</div>
+        {articulos.length === 0 ? (
+          <div className="py-24 text-center">
+            <p className="text-muted-foreground text-sm">No hay artículos de economía disponibles en este momento.</p>
+          </div>
+        ) : (
+          <>
+            {/* ── Hero + sidebar ── */}
+            {hero && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10 pb-10 border-b border-border">
+                {/* Hero */}
+                <div className="lg:col-span-2">
+                  <HeroArticle art={hero} />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
+                {/* Sidebar */}
+                {sidebar.length > 0 && (
+                  <div className="lg:border-l lg:border-border lg:pl-8">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-3 pb-2 border-b border-border">
+                      También en economía
+                    </div>
+                    <div className="divide-y divide-border">
+                      {sidebar.map(art => (
+                        <ListArticle key={art.slug} art={art} showBorder={false} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Article grid ── */}
+            {grid.length > 0 && (
+              <div className={`grid gap-6 mb-10 ${destacado ? 'grid-cols-1 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {/* Grid principal */}
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${destacado ? 'lg:col-span-3' : ''}`}>
+                  {grid.map(art => (
+                    <GridCard key={art.slug} art={art} />
+                  ))}
+                </div>
+
+                {/* Card destacada al costado */}
+                {destacado && (
+                  <div className="lg:border-l lg:border-border lg:pl-6">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-3 pb-2 border-b border-border">
+                      En profundidad
+                    </div>
+                    <FeaturedSideCard art={destacado} />
+                    {extras.length > 0 && (
+                      <div className="mt-4 divide-y divide-border">
+                        {extras.slice(0, 3).map(art => (
+                          <ListArticle key={art.slug} art={art} showBorder={false} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Si solo hay 1 artículo y nada más ── */}
+            {articulos.length === 1 && (
+              <p className="text-center text-sm text-muted-foreground py-12">
+                Más artículos de economía próximamente.
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
   )

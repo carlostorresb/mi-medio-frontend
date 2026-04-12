@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Share2, Bookmark, ChevronRight } from 'lucide-react'
 import { getArticulos, SECCIONES_LABELS, tiempoRelativo } from '../../../lib/articulos'
+import { optimizeImage } from '../../../lib/utils'
 
 const BASE = 'https://noticia24x7.com'
 
@@ -157,7 +158,7 @@ export default async function ArticuloPage({ params }) {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
             <figure>
               <div className="aspect-[21/9] w-full overflow-hidden rounded-lg bg-muted">
-                <img src={art.imagen_url} alt={art.titular} className="w-full h-full object-cover" />
+                <img src={optimizeImage(art.imagen_url, 1200)} alt={art.titular} className="w-full h-full object-cover" />
               </div>
               {art.fuente_nombre && (
                 <figcaption className="text-sm text-muted-foreground mt-3 text-right">
@@ -211,7 +212,7 @@ export default async function ArticuloPage({ params }) {
               <Link href={`/articulo/${rel.slug}/`} key={rel.slug} className="group cursor-pointer flex flex-col block">
                 <div className="relative overflow-hidden rounded-md mb-4" style={{ aspectRatio: '16/9' }}>
                   {rel.imagen_url
-                    ? <img src={rel.imagen_url} alt={rel.titular} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    ? <img src={optimizeImage(rel.imagen_url, 600)} alt={rel.titular} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     : <div className="w-full h-full bg-muted" />
                   }
                 </div>

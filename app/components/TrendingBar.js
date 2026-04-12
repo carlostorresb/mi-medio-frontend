@@ -1,6 +1,16 @@
+import Link from 'next/link'
+
 // Server component — CSS marquee, no client state needed
-export function TrendingBar({ headlines }) {
-  if (!headlines || headlines.length === 0) return null
+// Acepta `articles` (array con slug+titular) o el legacy `headlines` (array de strings)
+export function TrendingBar({ articles, headlines }) {
+  // Normaliza: si recibe articles usa eso, si no usa headlines como fallback sin link
+  const items = articles?.length
+    ? articles.map(a => ({ titular: a.titular, slug: a.slug }))
+    : (headlines || []).map(h => ({ titular: h, slug: null }))
+
+  if (items.length === 0) return null
+
+  const doubled = [...items, ...items]
 
   return (
     <div className="w-full bg-background border-b border-border overflow-hidden flex items-center h-10">
@@ -16,11 +26,20 @@ export function TrendingBar({ headlines }) {
         {/* Marquee — duplicate for seamless loop */}
         <div className="flex-grow overflow-hidden relative ml-4">
           <div className="animate-marquee whitespace-nowrap flex items-center">
-            {[...headlines, ...headlines].map((headline, i) => (
+            {doubled.map((item, i) => (
               <span key={i} className="inline-flex items-center">
-                <span className="text-sm font-medium text-foreground hover:text-destructive cursor-pointer transition-colors">
-                  {headline}
-                </span>
+                {item.slug ? (
+                  <Link
+                    href={`/articulo/${item.slug}/`}
+                    className="text-sm font-medium text-foreground hover:text-destructive transition-colors"
+                  >
+                    {item.titular}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-medium text-foreground">
+                    {item.titular}
+                  </span>
+                )}
                 <span className="mx-4 text-muted-foreground/50">•</span>
               </span>
             ))}

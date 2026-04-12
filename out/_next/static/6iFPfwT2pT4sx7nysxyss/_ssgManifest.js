@@ -1,1 +1,0 @@
-self.__SSG_MANIFEST=new Set(["\u002Farticulo\u002F[slug]","\u002Fseccion\u002F[nombre]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()

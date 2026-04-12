@@ -1,4 +1,5 @@
 import { getArticulosPorSeccion, SECCIONES_LABELS, tiempoRelativo } from '../../../lib/articulos'
+import { optimizeImage } from '../../../lib/utils'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArticleCard } from '../../components/ArticleCard'
@@ -37,7 +38,7 @@ function SectionHero({ art }) {
     <Link href={`/articulo/${art.slug}/`} className="group block">
       <div className="relative aspect-[21/9] overflow-hidden rounded-lg mb-6 bg-muted">
         {art.imagen_url
-          ? <img src={art.imagen_url} alt={art.titular} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          ? <img src={optimizeImage(art.imagen_url, 800)} alt={art.titular} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           : <div className="w-full h-full bg-muted" />
         }
       </div>
