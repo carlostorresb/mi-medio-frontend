@@ -1,44 +1,37 @@
-import fs from "fs";
-import path from "path";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import fs from 'fs'
+import path from 'path'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { Share2, Bookmark, ChevronRight } from 'lucide-react'
+import { getArticulos, SECCIONES_LABELS, tiempoRelativo } from '../../../lib/articulos'
 
 const BASE = 'https://noticia24x7.com'
 
-const SECCIONES = {
-  el_pais:       { label: "El País",       color: "bg-red-100 text-red-800" },
-  internacional: { label: "Internacional", color: "bg-blue-100 text-blue-800" },
-  economia:      { label: "Economía",      color: "bg-green-100 text-green-800" },
-  sociedad:      { label: "Sociedad",      color: "bg-orange-100 text-orange-800" },
-  tecnologia:    { label: "Tecnología",    color: "bg-cyan-100 text-cyan-800" },
-  ciencia:       { label: "Ciencia",       color: "bg-indigo-100 text-indigo-800" },
-  salud:         { label: "Salud",         color: "bg-pink-100 text-pink-800" },
-  cultura:       { label: "Cultura",       color: "bg-purple-100 text-purple-800" },
-  deportes:      { label: "Deportes",      color: "bg-yellow-100 text-yellow-800" },
-  opinion:       { label: "Opinión",       color: "bg-gray-100 text-gray-800" },
-};
-
 function cargarArticulo(slug) {
-  const ruta = path.join(process.cwd(), "contenido", `${slug}.json`);
-  if (!fs.existsSync(ruta)) return null;
-  return JSON.parse(fs.readFileSync(ruta, "utf8"));
+  const ruta = path.join(process.cwd(), 'contenido', `${slug}.json`)
+  if (!fs.existsSync(ruta)) return null
+  try {
+    return { ...JSON.parse(fs.readFileSync(ruta, 'utf8')), slug }
+  } catch {
+    return null
+  }
 }
 
 export async function generateStaticParams() {
-  const carpeta = path.join(process.cwd(), "contenido");
-  if (!fs.existsSync(carpeta)) return [];
+  const carpeta = path.join(process.cwd(), 'contenido')
+  if (!fs.existsSync(carpeta)) return []
   return fs.readdirSync(carpeta)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => ({ slug: f.replace(".json", "") }));
+    .filter(f => f.endsWith('.json'))
+    .map(f => ({ slug: f.replace('.json', '') }))
 }
 
 export async function generateMetadata({ params }) {
-  const art = cargarArticulo(params.slug);
-  if (!art) return { title: "Artículo no encontrado" };
+  const art = cargarArticulo(params.slug)
+  if (!art) return { title: 'Artículo no encontrado' }
 
   const url = `${BASE}/articulo/${params.slug}/`
   const imagen = art.imagen_url || `${BASE}/og-default.jpg`
-  const seccionLabel = SECCIONES[art.seccion]?.label || art.seccion
+  const seccionLabel = SECCIONES_LABELS[art.seccion] || art.seccion
 
   return {
     title: art.titular,
@@ -67,113 +60,173 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default function Articulo({ params }) {
-  const art = cargarArticulo(params.slug);
-  if (!art) notFound();
+export default async function ArticuloPage({ params }) {
+  const art = cargarArticulo(params.slug)
+  if (!art) notFound()
 
-  const seccion = SECCIONES[art.seccion] ?? { label: art.seccion, color: "bg-gray-100 text-gray-700" };
+  const seccionLabel = SECCIONES_LABELS[art.seccion] || art.seccion
   const url = `${BASE}/articulo/${params.slug}/`
 
+  const todos = await getArticulos(50)
+  const relacionados = todos.filter(a => a.seccion === art.seccion && a.slug !== art.slug).slice(0, 3)
+
   const schema = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    "headline": art.titular,
-    "description": art.resumen_seo || art.subtitulo,
-    "image": art.imagen_url ? [art.imagen_url] : [],
-    "datePublished": art.fecha_generacion,
-    "dateModified": art.fecha_generacion,
-    "author": [{ "@type": "Organization", "name": "noticia24x7.com", "url": BASE }],
-    "publisher": {
-      "@type": "Organization",
-      "name": "noticia24x7.com",
-      "url": BASE,
-      "logo": { "@type": "ImageObject", "url": `${BASE}/og-default.jpg` }
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: art.titular,
+    description: art.resumen_seo || art.subtitulo,
+    image: art.imagen_url ? [art.imagen_url] : [],
+    datePublished: art.fecha_generacion,
+    dateModified: art.fecha_generacion,
+    author: [{ '@type': 'Organization', name: 'noticia24x7.com', url: BASE }],
+    publisher: {
+      '@type': 'Organization',
+      name: 'noticia24x7.com',
+      url: BASE,
+      logo: { '@type': 'ImageObject', url: `${BASE}/og-default.jpg` },
     },
-    "mainEntityOfPage": { "@type": "WebPage", "@id": url },
-    "articleSection": seccion.label,
-    "keywords": art.tags?.join(', '),
-    "inLanguage": "es-PE",
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    articleSection: seccionLabel,
+    keywords: art.tags?.join(', '),
+    inLanguage: 'es-PE',
   }
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-      />
-      <div className="container">
-        <div className="articulo-layout">
-          <div className="articulo-main">
-            <div className="articulo-breadcrumb">
-              <a href="/">Inicio</a>
-              <span>›</span>
-              <a href={`/seccion/${art.seccion}/`}>{seccion.label}</a>
-            </div>
+    <main className="min-h-screen bg-background pb-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
-            <h1 className="articulo-headline">{art.titular}</h1>
-            {art.subtitulo && <p className="articulo-deck">{art.subtitulo}</p>}
-
-            <div className="articulo-byline">
-              <time dateTime={art.fecha_generacion}>
-                {new Date(art.fecha_generacion).toLocaleDateString('es-PE', {
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                })}
-              </time>
-              {art.puntuacion && <span> · Relevancia: {art.puntuacion}/10</span>}
-            </div>
-
-            {art.imagen_url && (
-              <div>
-                <img
-                  src={art.imagen_url}
-                  alt={art.titular}
-                  className="articulo-img-placeholder"
-                  style={{ objectFit: 'cover' }}
-                />
-                {art.url_fuente && (
-                  <p className="articulo-credit">
-                    Imagen: <a href={art.url_fuente} target="_blank" rel="noopener noreferrer">
-                      {new URL(art.url_fuente).hostname}
-                    </a>
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div
-              className="articulo-body"
-              dangerouslySetInnerHTML={{ __html: art.cuerpo || "" }}
-            />
-
-            {art.tags?.length > 0 && (
-              <div className="articulo-tags">
-                {art.tags.map((tag) => (
-                  <span key={tag} className="tag">#{tag}</span>
-                ))}
-              </div>
-            )}
-
-            {art.url_fuente && (
-              <a href={art.url_fuente} target="_blank" rel="noopener noreferrer" className="fuente-link">
-                Ver fuente original →
-              </a>
-            )}
-
-            <div className="ai-disclaimer">
-              Este artículo fue redactado automáticamente por inteligencia artificial basándose en fuentes periodísticas verificadas.
-            </div>
+      <article>
+        {/* Header */}
+        <header className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
+          <div className="flex items-center text-xs font-bold uppercase tracking-wider text-muted-foreground mb-6">
+            <Link href="/" className="hover:text-foreground transition-colors">Inicio</Link>
+            <ChevronRight className="w-3 h-3 mx-2" />
+            <Link href={`/seccion/${art.seccion}/`} className="text-destructive hover:text-destructive/80 transition-colors">
+              {seccionLabel}
+            </Link>
           </div>
 
-          <aside className="articulo-aside">
-            <div className="sidebar-block">
-              <div className="sidebar-title">Sección</div>
-              <a href={`/seccion/${art.seccion}/`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                Ver más de {seccion.label} →
-              </a>
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
+            {art.titular}
+          </h1>
+
+          {art.subtitulo && (
+            <p className="text-xl md:text-2xl text-muted-foreground font-serif italic mb-8 leading-relaxed">
+              {art.subtitulo}
+            </p>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-6 border-y border-border gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-muted-foreground">N</span>
+              </div>
+              <div>
+                <div className="font-bold text-foreground text-sm">noticia24x7.com</div>
+                <div className="text-sm text-muted-foreground">
+                  <time dateTime={art.fecha_generacion}>
+                    {new Date(art.fecha_generacion).toLocaleDateString('es-PE', {
+                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    })}
+                  </time>
+                </div>
+              </div>
             </div>
-          </aside>
+            <div className="flex items-center gap-2">
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(art.titular)}&url=${encodeURIComponent(url)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                aria-label="Compartir en Twitter"
+              >
+                <Share2 className="w-4 h-4" />
+              </a>
+              <button
+                className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                aria-label="Guardar"
+              >
+                <Bookmark className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Featured image */}
+        {art.imagen_url && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+            <figure>
+              <div className="aspect-[21/9] w-full overflow-hidden rounded-lg bg-muted">
+                <img src={art.imagen_url} alt={art.titular} className="w-full h-full object-cover" />
+              </div>
+              {art.fuente_nombre && (
+                <figcaption className="text-sm text-muted-foreground mt-3 text-right">
+                  Fotografía: {art.fuente_nombre} · noticia24x7.com
+                </figcaption>
+              )}
+            </figure>
+          </div>
+        )}
+
+        {/* Body */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div
+            className="article-drop-cap
+              [&_p]:font-sans [&_p]:text-base [&_p]:leading-[1.85] [&_p]:mb-5 [&_p]:text-foreground/85
+              [&_h2]:font-serif [&_h2]:text-3xl [&_h2]:font-bold [&_h2]:mt-12 [&_h2]:mb-6 [&_h2]:text-foreground
+              [&_h3]:font-serif [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:mt-10 [&_h3]:mb-4 [&_h3]:text-foreground
+              [&_blockquote]:border-l-4 [&_blockquote]:border-destructive [&_blockquote]:pl-6 [&_blockquote]:py-2 [&_blockquote]:my-8 [&_blockquote]:font-serif [&_blockquote]:text-2xl [&_blockquote]:italic [&_blockquote]:text-foreground/80
+              [&_a]:text-destructive [&_a:hover]:underline [&_strong]:font-semibold"
+            dangerouslySetInnerHTML={{ __html: art.cuerpo || '' }}
+          />
+
+          {art.tags?.length > 0 && (
+            <div className="mt-12 pt-8 border-t border-border flex flex-wrap gap-2">
+              {art.tags.map(tag => (
+                <span key={tag} className="px-3 py-1 bg-muted text-sm font-medium rounded-full text-foreground hover:bg-destructive hover:text-white transition-colors cursor-pointer">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {art.url_fuente && (
+            <a href={art.url_fuente} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block text-sm text-destructive hover:underline">
+              Ver fuente original ({art.fuente_nombre || 'Fuente'}) →
+            </a>
+          )}
+
+          <div className="mt-10 p-4 border-l-4 border-border bg-muted/30 text-sm text-muted-foreground italic rounded-r-md">
+            Este artículo fue redactado automáticamente por inteligencia artificial basándose en fuentes periodísticas verificadas.
+          </div>
         </div>
-      </div>
-    </>
+      </article>
+
+      {/* Related articles */}
+      {relacionados.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 pt-12 border-t border-border">
+          <h3 className="font-serif text-2xl font-bold text-foreground mb-8">Artículos Relacionados</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {relacionados.map(rel => (
+              <Link href={`/articulo/${rel.slug}/`} key={rel.slug} className="group cursor-pointer flex flex-col block">
+                <div className="relative overflow-hidden rounded-md mb-4" style={{ aspectRatio: '16/9' }}>
+                  {rel.imagen_url
+                    ? <img src={rel.imagen_url} alt={rel.titular} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    : <div className="w-full h-full bg-muted" />
+                  }
+                </div>
+                <div className="text-xs font-bold uppercase tracking-wider text-destructive mb-2">
+                  {SECCIONES_LABELS[rel.seccion] || rel.seccion}
+                </div>
+                <h4 className="font-serif text-xl font-bold text-foreground leading-snug group-hover:text-title-hover transition-colors duration-200">
+                  {rel.titular}
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1">{tiempoRelativo(rel.fecha_generacion)}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </main>
   )
 }

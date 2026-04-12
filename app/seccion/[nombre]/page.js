@@ -1,24 +1,59 @@
-import { getArticulosPorSeccion, tiempoRelativo, SECCIONES_LABELS } from '../../../lib/articulos'
+import { getArticulosPorSeccion, SECCIONES_LABELS, tiempoRelativo } from '../../../lib/articulos'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { ArticleCard } from '../../components/ArticleCard'
+
+const BASE = 'https://noticia24x7.com'
 
 export async function generateStaticParams() {
-  const secciones = Object.keys(SECCIONES_LABELS)
-  return secciones.map((nombre) => ({ nombre }))
+  return Object.keys(SECCIONES_LABELS).map(nombre => ({ nombre }))
 }
 
 export async function generateMetadata({ params }) {
   const { nombre } = await params
-  const label = SECCIONES_LABELS[nombre] || nombre
+  const label = SECCIONES_LABELS[nombre]
+  if (!label) return { title: 'Sección no encontrada' }
+
+  const url = `${BASE}/seccion/${nombre}/`
   return {
     title: `${label} — noticia24x7.com`,
-    description: `Últimas noticias de ${label} en noticia24x7.com`,
+    description: `Últimas noticias de ${label} en noticia24x7.com. Cobertura continua con inteligencia artificial.`,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      url,
+      title: `${label} — noticia24x7.com`,
+      description: `Últimas noticias de ${label}`,
+      locale: 'es_PE',
+      siteName: 'noticia24x7.com',
+    },
   }
 }
 
-function Img({ art, height = 200 }) {
-  if (art.imagen_url) return <img src={art.imagen_url} alt={art.titular} style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
-  return <div style={{ width: '100%', height, background: '#c8c4b8' }} />
+function SectionHero({ art }) {
+  if (!art) return null
+  const label = SECCIONES_LABELS[art.seccion] || art.seccion
+  return (
+    <Link href={`/articulo/${art.slug}/`} className="group block">
+      <div className="relative aspect-[21/9] overflow-hidden rounded-lg mb-6 bg-muted">
+        {art.imagen_url
+          ? <img src={art.imagen_url} alt={art.titular} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          : <div className="w-full h-full bg-muted" />
+        }
+      </div>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-sm font-bold uppercase tracking-widest text-destructive">{label}</span>
+        <span className="text-border">•</span>
+        <span className="text-sm text-muted-foreground">{tiempoRelativo(art.fecha_generacion)}</span>
+      </div>
+      <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground leading-tight mb-3 group-hover:text-title-hover transition-colors duration-200">
+        {art.titular}
+      </h2>
+      {art.subtitulo && (
+        <p className="text-muted-foreground text-lg leading-relaxed max-w-3xl">{art.subtitulo}</p>
+      )}
+    </Link>
+  )
 }
 
 export default async function SeccionPage({ params }) {
@@ -28,66 +63,65 @@ export default async function SeccionPage({ params }) {
 
   const articulos = await getArticulosPorSeccion(nombre, 40)
   const hero = articulos[0]
-  const secundarios = articulos.slice(1, 4)
-  const resto = articulos.slice(4)
+  const resto = articulos.slice(1)
 
   return (
-    <div className="container">
-      <div style={{ borderBottom: '3px solid #111', marginBottom: 24, paddingBottom: 12, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <h1 style={{ fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#111', margin: 0 }}>{label}</h1>
-        <span style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999' }}>{articulos.length} artículos</span>
+    <main className="min-h-screen bg-background pb-16">
+      {/* Section header */}
+      <div className="border-b border-border bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-destructive mb-2">Sección</p>
+              <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground">{label}</h1>
+              <p className="text-muted-foreground mt-3 font-sans">
+                Cobertura continua de {label} · noticia24x7.com
+              </p>
+            </div>
+            <span className="text-sm text-muted-foreground hidden md:block">
+              {articulos.length} {articulos.length === 1 ? 'artículo' : 'artículos'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {articulos.length === 0 ? (
-        <div style={{ padding: '60px 0', textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--body-serif)', fontSize: 16, color: 'var(--mid)' }}>No hay artículos en esta sección por el momento.</p>
-          <Link href="/" style={{ marginTop: 16, display: 'inline-block', fontFamily: 'Inter,sans-serif', fontSize: 12 }}>← Volver a la portada</Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+          <p className="font-serif text-2xl text-muted-foreground mb-4">
+            No hay artículos disponibles en esta sección
+          </p>
+          <p className="text-muted-foreground mb-8">El agente publicará noticias pronto.</p>
+          <Link href="/" className="inline-block px-6 py-3 bg-foreground text-background font-bold text-sm rounded-md hover:bg-destructive hover:text-white transition-colors">
+            ← Volver a la portada
+          </Link>
         </div>
       ) : (
-        <>
-          {/* HERO + 3 SECUNDARIOS */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Hero article */}
           {hero && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 32, marginBottom: 32, paddingBottom: 32, borderBottom: '2px solid #e0dfd8' }}>
-              <div style={{ borderRight: '1px solid #e0dfd8', paddingRight: 32 }}>
-                <Link href={`/articulo/${hero.slug}/`}><Img art={hero} height={300} /></Link>
-                <Link href={`/articulo/${hero.slug}/`}>
-                  <h2 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: '#111', margin: '12px 0 8px' }}>{hero.titular}</h2>
-                </Link>
-                <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 15, color: '#444', lineHeight: 1.6, margin: '0 0 8px' }}>{hero.subtitulo}</p>
-                <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999' }}>{tiempoRelativo(hero.fecha_generacion)}</div>
-              </div>
-              <div>
-                {secundarios.map((art, i) => (
-                  <div key={art.slug} style={{ paddingBottom: 16, marginBottom: 16, borderBottom: i < secundarios.length - 1 ? '1px solid #e0dfd8' : 'none' }}>
-                    {art.imagen_url && <Link href={`/articulo/${art.slug}/`}><Img art={art} height={120} /></Link>}
-                    <Link href={`/articulo/${art.slug}/`}>
-                      <h3 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: '#111', margin: '8px 0 4px' }}>{art.titular}</h3>
-                    </Link>
-                    <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 13, color: '#555', lineHeight: 1.4, margin: '0 0 4px' }}>{art.subtitulo}</p>
-                    <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999' }}>{tiempoRelativo(art.fecha_generacion)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <section className="py-12 border-b border-border">
+              <SectionHero art={hero} />
+            </section>
           )}
 
-          {/* GRID RESTO */}
+          {/* Article grid */}
           {resto.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
-              {resto.map(art => (
-                <div key={art.slug} style={{ paddingBottom: 20, borderBottom: '1px solid #e0dfd8' }}>
-                  {art.imagen_url && <Link href={`/articulo/${art.slug}/`}><Img art={art} height={160} /></Link>}
-                  <Link href={`/articulo/${art.slug}/`}>
-                    <h3 style={{ fontFamily: "'Playfair Display',Georgia,serif", fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: '#111', margin: '10px 0 6px' }}>{art.titular}</h3>
-                  </Link>
-                  <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 13, color: '#555', lineHeight: 1.4, margin: '0 0 6px' }}>{art.subtitulo}</p>
-                  <div style={{ fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#999' }}>{tiempoRelativo(art.fecha_generacion)}</div>
-                </div>
-              ))}
-            </div>
+            <section className="py-12">
+              <div className="flex items-center justify-between mb-10">
+                <h2 className="font-serif text-2xl font-bold text-foreground relative inline-block">
+                  Más artículos
+                  <span className="absolute -bottom-2 left-0 w-1/2 h-1 bg-destructive" />
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {resto.map(art => (
+                  <ArticleCard key={art.slug} art={art} />
+                ))}
+              </div>
+            </section>
           )}
-        </>
+        </div>
       )}
-    </div>
+    </main>
   )
 }
