@@ -1,22 +1,6 @@
 import Link from 'next/link'
 import { SECCIONES_LABELS, tiempoRelativo } from '../../lib/utils'
-
-function HeroImage({ art, height = '100%' }) {
-  if (art.imagen_url) {
-    return (
-      <img
-        src={art.imagen_url}
-        alt={art.titular}
-        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
-    )
-  }
-  return (
-    <div className="w-full h-full bg-muted flex items-center justify-center">
-      <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Sin imagen</span>
-    </div>
-  )
-}
+import { SmartImg } from './SmartImg'
 
 export function HeroSection({ mainArticle, secondaryArticles }) {
   if (!mainArticle) return null
@@ -34,7 +18,7 @@ export function HeroSection({ mainArticle, secondaryArticles }) {
             className="lg:col-span-8 group cursor-pointer block"
           >
             <div className="relative aspect-[16/9] lg:aspect-[2/1] overflow-hidden rounded-lg mb-6">
-              <HeroImage art={mainArticle} />
+              <SmartImg src={mainArticle.imagen_url} alt={mainArticle.titular} width={1200} className="transition-transform duration-700 group-hover:scale-105" />
             </div>
 
             <div className="flex items-center space-x-3 mb-4">

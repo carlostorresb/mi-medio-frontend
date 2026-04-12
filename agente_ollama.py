@@ -2,6 +2,38 @@ import json, re, base64, os, urllib.request, urllib.parse, http.client, html
 from datetime import datetime
 from pathlib import Path
 
+def extraer_og_image(url, timeout=8):
+    """
+    Intenta obtener og:image del artículo original.
+    Devuelve la URL de la imagen o cadena vacía si falla.
+    """
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)",
+                "Accept": "text/html",
+            }
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            # Leer solo los primeros 50KB para encontrar las meta tags sin bajar todo
+            chunk = r.read(50_000).decode("utf-8", errors="ignore")
+
+        # Busca og:image
+        for pattern in [
+            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+            r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+        ]:
+            m = re.search(pattern, chunk, re.IGNORECASE)
+            if m:
+                img_url = m.group(1).strip()
+                if img_url.startswith("http"):
+                    return img_url
+    except Exception:
+        pass
+    return ""
+
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = "carlostorresb/mi-medio-digital"
 GITHUB_BRANCH = "main"
@@ -117,11 +149,17 @@ def noticias(cfg, procesados):
             url = art.get("url", "")
             if not url or url in procesados:
                 continue
+            # Intenta og:image del artículo; si falla usa el thumbnail de Mediastack
+            mediastack_img = art.get("image") or ""
+            og_img = extraer_og_image(url)
+            imagen = og_img if og_img else mediastack_img
+            print(f"  imagen: {'og:image' if og_img else 'mediastack'} → {imagen[:60]}")
+
             result.append({
                 "titulo":   html.unescape(art.get("title", "")),
                 "resumen":  html.unescape((art.get("description") or "")[:400]),
                 "url":      url,
-                "imagen":   art.get("image") or "",   # ← viene gratis de Mediastack
+                "imagen":   imagen,
             })
             if len(result) >= 2:
                 break

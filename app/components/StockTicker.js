@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import Link from 'next/link'
 
 const marketData = [
   { name: 'Nasdaq',   value: '+0.35%', isPositive: true },
@@ -24,7 +25,7 @@ export function StockTicker() {
   const item = marketData[currentIndex]
 
   return (
-    <div className="h-6 overflow-hidden relative flex items-center justify-end w-40">
+    <Link href="/seccion/economia/" className="h-6 overflow-hidden relative flex items-center justify-end w-40 group" title="Ver sección Economía">
       <AnimatePresence mode="popLayout">
         <motion.div
           key={currentIndex}
@@ -34,7 +35,7 @@ export function StockTicker() {
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="absolute flex items-center space-x-1.5 text-[11px] md:text-sm font-medium font-sans"
         >
-          <span className="text-foreground">{item.name}</span>
+          <span className="text-foreground group-hover:underline">{item.name}</span>
           <span className={`flex items-center ${item.isPositive ? 'text-green-600' : 'text-destructive'}`}>
             {item.value}
             {item.isPositive
@@ -44,6 +45,6 @@ export function StockTicker() {
           </span>
         </motion.div>
       </AnimatePresence>
-    </div>
+    </Link>
   )
 }

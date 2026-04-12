@@ -1,4 +1,5 @@
 import { getArticulos, SECCIONES_LABELS, tiempoRelativo } from '../lib/articulos'
+import { optimizeImage } from '../lib/utils'
 import { TrendingBar } from './components/TrendingBar'
 import { HeroSection } from './components/HeroSection'
 import { ArticleGrid } from './components/ArticleGrid'
@@ -23,7 +24,7 @@ function CategoryPreview({ seccion, articles }) {
             <div className="w-1/3 relative overflow-hidden rounded-md flex-shrink-0" style={{ aspectRatio: '4/3' }}>
               {art.imagen_url ? (
                 <img
-                  src={art.imagen_url}
+                  src={optimizeImage(art.imagen_url, 600)}
                   alt={art.titular}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -92,7 +93,7 @@ export default async function Portada() {
   const mainArticle      = todos[0]
   const secondaryArticles = todos.slice(1, 4)
   const latestArticles   = todos.slice(0, 9)
-  const trendingHeadlines = todos.slice(0, 12).map(a => a.titular)
+  const trendingArticles = todos.slice(0, 12)
 
   const bySection = (sec, n = 2) => todos.filter(a => a.seccion === sec).slice(0, n)
 
@@ -105,7 +106,7 @@ export default async function Portada() {
 
   return (
     <>
-      <TrendingBar headlines={trendingHeadlines} />
+      <TrendingBar articles={trendingArticles} />
 
       <HeroSection mainArticle={mainArticle} secondaryArticles={secondaryArticles} />
 
