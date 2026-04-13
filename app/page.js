@@ -24,10 +24,11 @@ function CategoryPreview({ seccion, articles }) {
             <div className="w-1/3 relative overflow-hidden rounded-md flex-shrink-0" style={{ aspectRatio: '4/3' }}>
               {art.imagen_url ? (
                 <img
-                  src={optimizeImage(art.imagen_url, 600)}
-                  alt={art.titular}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                src={optimizeImage(art.imagen_url, 600)}
+                alt={art.titular}
+                loading="lazy"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
               ) : (
                 <div className="w-full h-full bg-muted" />
               )}
