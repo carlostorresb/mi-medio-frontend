@@ -1,33 +1,23 @@
-import fs from 'fs'
-import path from 'path'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Share2, Bookmark, ChevronRight } from 'lucide-react'
-import { getArticulos, SECCIONES_LABELS, tiempoRelativo } from '../../../lib/articulos'
+import { getArticulos, getArticuloPorSlug, SECCIONES_LABELS, tiempoRelativo } from '../../../lib/articulos'
 import { optimizeImage } from '../../../lib/utils'
 
 const BASE = 'https://noticia24x7.com'
 
-function cargarArticulo(slug) {
-  const ruta = path.join(process.cwd(), 'contenido', `${slug}.json`)
-  if (!fs.existsSync(ruta)) return null
+export async function generateStaticParams() {
   try {
-    return { ...JSON.parse(fs.readFileSync(ruta, 'utf8')), slug }
-  } catch {
-    return null
+    const articulos = await getArticulos(500)
+    return articulos.map(a => ({ slug: a.slug }))
+  } catch(e) {
+    return []
   }
 }
 
-export async function generateStaticParams() {
-  const carpeta = path.join(process.cwd(), 'contenido')
-  if (!fs.existsSync(carpeta)) return []
-  return fs.readdirSync(carpeta)
-    .filter(f => f.endsWith('.json'))
-    .map(f => ({ slug: f.replace('.json', '') }))
-}
 
 export async function generateMetadata({ params }) {
-  const art = cargarArticulo(params.slug)
+  const art = await getArticuloPorSlug(params.slug)
   if (!art) return { title: 'Artículo no encontrado' }
 
   const url = `${BASE}/articulo/${params.slug}/`
@@ -62,7 +52,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ArticuloPage({ params }) {
-  const art = cargarArticulo(params.slug)
+  const art = await getArticuloPorSlug(params.slug)
   if (!art) notFound()
 
   const seccionLabel = SECCIONES_LABELS[art.seccion] || art.seccion
