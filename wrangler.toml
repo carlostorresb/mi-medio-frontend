@@ -1,5 +1,2 @@
 name = "mi-medio-digital"
 pages_build_output_dir = "out"
-
-[vars]
-EMDASH_TOKEN = "ec_pat_nJx4YmXHXgKf8TMtxk0yKCj8ZXz2nGfypRBZEcM0lpc"
