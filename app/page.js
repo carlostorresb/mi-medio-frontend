@@ -93,7 +93,7 @@ export default async function Portada() {
 
   const mainArticle      = todos[0]
   const secondaryArticles = todos.slice(1, 4)
-  const latestArticles   = todos.slice(0, 9)
+  const latestArticles   = todos.slice(4, 13)
   const trendingArticles = todos.slice(0, 12)
 
   const bySection = (sec, n = 2) => todos.filter(a => a.seccion === sec).slice(0, n)
