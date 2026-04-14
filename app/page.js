@@ -91,8 +91,9 @@ export default async function Portada() {
     )
   }
 
-  const mainArticle      = todos[0]
-  const secondaryArticles = todos.slice(1, 4)
+  const sorted = [...todos].sort((a, b) => (b.puntuacion || 0) - (a.puntuacion || 0))
+  const mainArticle      = sorted[0]
+  const secondaryArticles = sorted.slice(1, 4)
   const latestArticles   = todos.slice(4, 13)
   const trendingArticles = todos.slice(0, 12)
 
