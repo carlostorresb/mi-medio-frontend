@@ -1,10 +1,11 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Search, Sun, Moon, ChevronDown } from 'lucide-react'
+import { Menu, X, Search, Sun, Moon, ChevronDown, Globe } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTheme } from './ThemeProvider'
+import { useLanguage } from '../../lib/i18n'
 import { SidebarNav } from './SidebarNav'
 import { SearchOverlay } from './SearchOverlay'
 import { PersonalizationMenu } from './PersonalizationMenu'
@@ -23,8 +24,6 @@ const CATEGORIES = [
   { label: 'Opinión',       href: '/seccion/opinion/' },
 ]
 
-const MAX_VISIBLE = 6
-
 function formatDate() {
   const now = new Date()
   const formatted = now.toLocaleDateString('es-PE', {
@@ -35,6 +34,7 @@ function formatDate() {
 
 export function Navigation() {
   const { isDark, toggleTheme } = useTheme()
+  const { language, setLanguage } = useLanguage()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -48,8 +48,8 @@ export function Navigation() {
     ? selectedInterests.map(name => ({ label: name, href: `#` }))
     : CATEGORIES
 
-  const visibleItems = navItems.slice(0, MAX_VISIBLE)
-  const overflowItems = navItems.slice(MAX_VISIBLE)
+  const visibleItems = navItems
+  const overflowItems = []
 
   // Close overflow on outside click
   useEffect(() => {
@@ -94,6 +94,18 @@ export function Navigation() {
 
             <div className="w-px h-4 bg-border hidden sm:block" />
 
+            {/* Language Toggle */}
+            <button
+              onClick={() => setLanguage(language === 'ES' ? 'EN' : 'ES')}
+              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
+              aria-label="Cambiar idioma"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{language}</span>
+            </button>
+
+            <div className="w-px h-4 bg-border hidden sm:block" />
+
             {/* Personalization */}
             <PersonalizationMenu
               selectedInterests={selectedInterests}
@@ -125,7 +137,7 @@ export function Navigation() {
               <Link href="/" className="block">
                 <img
                   src={isDark ? '/logo-dark.svg' : '/logo-light.svg'}
-                  alt="noticia24x7"
+                  alt="noticia247"
                   className="h-10 md:h-12 w-auto mb-1"
                 />
               </Link>

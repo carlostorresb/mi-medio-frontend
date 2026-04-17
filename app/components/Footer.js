@@ -23,7 +23,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <Link href="/" className="block mb-1">
-              <img src="/iso.svg" alt="noticia24x7" className="h-14 w-auto" />
+              <img src="/iso.svg" alt="noticia247" className="h-14 w-auto" />
             </Link>
             <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-4">
               Información continua · Generado con inteligencia artificial
@@ -90,7 +90,7 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between text-xs text-neutral-500">
-          <p>&copy; {new Date().getFullYear()} noticia24x7.com · Todos los derechos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} noticia247x.com · Todos los derechos reservados.</p>
           <p className="mt-2 md:mt-0">
             Diseñado con <span className="text-destructive">♥</span> para el futuro de las noticias · Lima, Perú
           </p>
